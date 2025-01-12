@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  name      String
+  proposals Proposal[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Proposal {
+  id          Int       @id @default(autoincrement())
+  title       String
+  sections    Section[] // New: separate sections table
+  status      String    @default("draft")
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  version     Int       @default(1)
+  isTemplate  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  history     ProposalHistory[] // New: for version control
+}
+
+// New: Section model for better structure
+model Section {
+  id         Int      @id @default(autoincrement())
+  title      String
+  content    Json     // Store section content as JSON
+  order      Int      // For drag-and-drop reordering
+  proposalId Int
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([proposalId, order])
+}
+
+// New: History model for version control
+model ProposalHistory {
+  id         Int      @id @default(autoincrement())
+  proposalId Int
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  content    Json     // Store the entire proposal state
+  version    Int
+  createdAt  DateTime @default(now())
+
+  @@index([proposalId, version])
+}
