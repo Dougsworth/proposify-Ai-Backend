@@ -382,6 +382,91 @@ Outline:
     return sectionSpecificPrompts[sectionTitle] || baseContext;
   }
 
+  async regenerateSectionContent(
+    sectionId: number,
+    data: {
+      sectionTitle: string;
+      currentContent: string;
+      proposalTitle: string;
+      sectionType: string;
+      context: Array<{ title: string; content: string }>;
+    },
+  ) {
+    try {
+      // 1. Get the section
+      const section = await this.prisma.section.findUnique({
+        where: { id: sectionId },
+      });
+
+      if (!section) {
+        throw new Error('Section not found');
+      }
+
+      // 2. Create the prompt for regeneration
+      const prompt = `You are regenerating a specific section of a business proposal.
+  
+  PROPOSAL TITLE: ${data.proposalTitle}
+  SECTION TITLE: ${data.sectionTitle}
+  SECTION TYPE: ${data.sectionType}
+  
+  CURRENT CONTENT:
+  ${data.currentContent}
+  
+  CONTEXT (Other Sections):
+  ${data.context.map((ctx) => `## ${ctx.title}\n${ctx.content}`).join('\n\n')}
+  
+  TASK:
+  Regenerate the "${data.sectionTitle}" section while:
+  - Maintaining professional business tone
+  - Keeping the same general structure but improving clarity and impact
+  - Ensuring content aligns with other sections
+  - Including specific details from the current version
+  - Adding more compelling arguments or examples where appropriate
+  - Formatting with appropriate headings and bullet points where relevant
+  - Keeping similar length to the current content
+  
+  Generate only the new content without any explanations or metadata.`;
+
+      // 3. Generate new content using OpenAI
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a professional business proposal writer with expertise in creating compelling, clear, and well-structured proposal sections. Your responses should be detailed, professional, and directly relevant to the section being regenerated.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+        top_p: 1,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.3,
+      });
+
+      if (!completion.choices[0]?.message?.content) {
+        throw new Error('No content generated');
+      }
+
+      const regeneratedContent = completion.choices[0].message.content.trim();
+
+      // 4. Update the section with new content
+      await this.prisma.section.update({
+        where: { id: sectionId },
+        data: { content: regeneratedContent },
+      });
+
+      return regeneratedContent;
+    } catch (error) {
+      console.error('Error regenerating section content:', error);
+      throw new Error(`Failed to regenerate section content: ${error.message}`);
+    }
+  }
+
   private async generateSectionContent(prompt: string): Promise<string> {
     try {
       const completion = await this.openai.chat.completions.create({

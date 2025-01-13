@@ -12,47 +12,45 @@ model User {
   email     String     @unique
   password  String
   name      String
-  proposals Proposal[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  proposals Proposal[]
 }
 
 model Proposal {
-  id          Int       @id @default(autoincrement())
-  title       String
-  sections    Section[] // New: separate sections table
-  status      String    @default("draft")
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id])
-  version     Int       @default(1)
-  isTemplate  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  history     ProposalHistory[] // New: for version control
+  id         Int               @id @default(autoincrement())
+  title      String
+  status     String            @default("draft")
+  userId     Int
+  version    Int               @default(1)
+  isTemplate Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  user       User              @relation(fields: [userId], references: [id])
+  history    ProposalHistory[]
+  sections   Section[]
 }
 
-// New: Section model for better structure
 model Section {
   id         Int      @id @default(autoincrement())
   title      String
-  content    Json     // Store section content as JSON
-  order      Int      // For drag-and-drop reordering
+  content    Json
+  order      Int
   proposalId Int
-  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 
   @@index([proposalId, order])
 }
 
-// New: History model for version control
 model ProposalHistory {
   id         Int      @id @default(autoincrement())
   proposalId Int
-  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  content    Json     // Store the entire proposal state
+  content    Json
   version    Int
   createdAt  DateTime @default(now())
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 
   @@index([proposalId, version])
 }

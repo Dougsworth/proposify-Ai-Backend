@@ -48,6 +48,33 @@ class SectionDto {
   order: number;
 }
 
+class RegenerateSectionDto {
+  @IsString()
+  sectionTitle: string;
+
+  @IsString()
+  currentContent: string;
+
+  @IsString()
+  proposalTitle: string;
+
+  @IsString()
+  sectionType: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SectionContextDto)
+  context: SectionContextDto[];
+}
+
+class SectionContextDto {
+  @IsString()
+  title: string;
+
+  @IsString()
+  content: string;
+}
+
 class CreateProposalDto implements CreateProposalData {
   @IsString()
   title: string;
@@ -281,6 +308,31 @@ export class ProposalController {
     } catch (error) {
       throw new BadRequestException(
         `Failed to generate proposal: ${error.message}`,
+      );
+    }
+  }
+
+  @Post(':id/sections/:sectionId/regenerate')
+  async regenerateSection(
+    @Param('id', ParseIntPipe) proposalId: number,
+    @Param('sectionId', ParseIntPipe) sectionId: number,
+    @Body() data: RegenerateSectionDto,
+    @Req() req,
+  ) {
+    try {
+      const userId = req.user.userId;
+      await this.proposalService.checkProposalOwnership(proposalId, userId);
+
+      const regeneratedContent =
+        await this.proposalService.regenerateSectionContent(sectionId, data);
+
+      return { content: regeneratedContent };
+    } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        `Failed to regenerate section: ${error.message}`,
       );
     }
   }
