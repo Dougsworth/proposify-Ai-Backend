@@ -28,17 +28,33 @@ async function bootstrap() {
 
   // CORS configuration
   app.enableCors({
-    origin:
-      process.env.NODE_ENV === 'production'
-        ? process.env.FRONTEND_URL?.split(',') || [
-            'https://your-production-domain.com',
-          ]
-        : ['http://localhost:3000', 'http://localhost:3001'],
+    origin: true, // Temporarily allow all origins during development
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 3600, // Cache preflight requests for 1 hour
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers',
+    ],
+    exposedHeaders: [
+      'Content-Range',
+      'X-Content-Range',
+      'Content-Security-Policy',
+      'Cross-Origin-Opener-Policy',
+      'Cross-Origin-Resource-Policy',
+      'Origin-Agent-Cluster',
+      'X-DNS-Prefetch-Control',
+      'X-Download-Options',
+      'X-Frame-Options',
+      'X-Permitted-Cross-Domain-Policies',
+      'X-Render-Origin-Server',
+      'X-XSS-Protection',
+    ],
+    maxAge: 3600,
   });
 
   // Trust proxy if behind a reverse proxy
