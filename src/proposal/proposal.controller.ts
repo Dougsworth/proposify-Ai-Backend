@@ -42,7 +42,8 @@ class SectionDto {
   @IsString()
   title: string;
 
-  content: any;
+  @IsString()
+  content: string;
 
   @IsNumber()
   order: number;
